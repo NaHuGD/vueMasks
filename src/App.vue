@@ -36,13 +36,13 @@
                 </select>
               </div>
             </div>
-            <p class="mb-0 small text-muted text-right">請先選擇區域查看（綠色表示還有口罩）</p>
+            <p class="mb-0 small text-muted text-right">（藍色表示還有口罩）</p>
           </div>
           <ul class="list-group">
             <template v-for="item in data">
               <a
-                @click="moveTo(item)"
-                class="list-group-item text-left"
+                @click="panTo(item)"
+                class="list-group-item text-left bg-blue"
                 v-if="item.properties.town === select.address"
                 :key="item.id"
               >
@@ -75,14 +75,17 @@ import L from 'leaflet'
 import cityName from './assets/cityName.json'
 
 let osmMap = []
-const myIcon = {}
+const myIcon = {
+  iconSize: [25, 41]
+}
 const icons = {
   blue: new L.Icon({
     iconUrl: 'https://unpkg.com/leaflet@1.6.0/dist/images/marker-icon-2x.png',
     ...myIcon
   }),
   grey: new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-grey.png',
+    iconUrl:
+      'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-grey.png',
     ...myIcon
   })
 }
@@ -113,18 +116,21 @@ export default {
       pharmacies.forEach(item => {
         // 解構物件
         const { geometry, properties } = item
+        const icon = properties.mask_adult ? icons.blue : icons.grey
         L.marker([
           // 取得座標位置並新增
           geometry.coordinates[1],
           geometry.coordinates[0]
-        ]).addTo(osmMap).bindPopup(`
+        ], {
+          icon
+        }).addTo(osmMap).bindPopup(`
         <strong>${properties.name}</strong><br>
         口罩剩:成人-${properties.mask_adult}/個
         兒童-${properties.mask_child}/個<br>
         地址:<a href="https://www.google.com.tw/maps/place/${properties.address}">${properties.address}</a><br>
         電話:${properties.phone}<br>
         最後更新時間:${properties.updated}<br>
-        `)
+        `).openPopup()
       })
       // 載入時皆帶入第一個藥局位置
       vm.panTo(pharmacies[0])
@@ -137,10 +143,27 @@ export default {
       })
     },
     panTo (item) {
-      osmMap.panTo([
-        item.geometry.coordinates[1],
-        item.geometry.coordinates[0]
-      ])
+      const { geometry, properties } = item
+      const icon = properties.mask_adult ? icons.blue : icons.grey
+      osmMap.panTo([geometry.coordinates[1], geometry.coordinates[0]])
+      L.marker([item.geometry.coordinates[1], item.geometry.coordinates[0]], {
+        icon
+      })
+        .addTo(osmMap)
+        .bindPopup(
+          `<strong>${properties.name}</strong> <br>
+        口罩剩餘：<strong>成人 - ${
+          properties.mask_adult ? `${properties.mask_adult} 個` : '無資料'
+        }/ 兒童 - ${
+            properties.mask_child ? `${properties.mask_child} 個` : '無資料'
+          }</strong><br>
+        地址: <a href="https://www.google.com.tw/maps/place/${
+          properties.address
+        }" target="_blank">${properties.address}</a><br>
+        電話: ${properties.phone}<br>
+        <small>最後更新時間: ${properties.updated}</small>`
+        )
+        .openPopup()
     },
     updataSelect () {
       const vm = this
@@ -154,23 +177,6 @@ export default {
         pharmacies.geometry.coordinates[1],
         pharmacies.geometry.coordinates[0]
       ])
-    },
-    moveTo (item) {
-      const { geometry, properties } = item
-      const icon = properties.mask_adult ? icons.blue : icons.grey
-      osmMap.panTo([
-        geometry.coordinates[1],
-        geometry.coordinates[0]
-      ])
-      L.marker([
-        item.geometry.coordinates[1],
-        item.geometry.coordinates[0]], {
-        icon
-      }).addTo(osmMap).bindPopup(`<strong>${properties.name}</strong> <br>
-        口罩剩餘：<strong>成人 - ${properties.mask_adult ? `${properties.mask_adult} 個` : '未取得資料'}/ 兒童 - ${properties.mask_child ? `${properties.mask_child} 個` : '未取得資料'}</strong><br>
-        地址: <a href="https://www.google.com.tw/maps/place/${properties.address}" target="_blank">${properties.address}</a><br>
-        電話: ${properties.phone}<br>
-        <small>最後更新時間: ${properties.updated}</small>`).openPopup()
     }
   },
   mounted () {
@@ -212,5 +218,8 @@ export default {
   a {
     cursor: pointer;
   }
+}
+.bg-blue{
+  background: #bee0ee;
 }
 </style>
