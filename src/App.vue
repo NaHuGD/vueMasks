@@ -36,13 +36,14 @@
                 </select>
               </div>
             </div>
-            <p class="mb-0 small text-muted text-right">（藍色表示還有口罩）</p>
+            <p class="mb-0 small text-muted text-right">（藍色表示還有成人口罩）</p>
           </div>
           <ul class="list-group">
-            <template v-for="item in data">
+            <template v-for="(item,i) in data">
               <a
                 @click="panTo(item)"
-                class="list-group-item text-left bg-blue"
+                class="list-group-item text-left"
+                :class="{'bg-blue':data[i].properties.mask_adult}"
                 v-if="item.properties.town === select.address"
                 :key="item.id"
               >
